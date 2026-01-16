@@ -4,7 +4,10 @@ import dotenv from "dotenv";
 import { initDatabase } from "./db";
 import billsRouter from "./routes/bills";
 
-dotenv.config();
+// Only load .env file in development
+if (process.env.NODE_ENV !== "production") {
+  dotenv.config();
+}
 
 const app = express();
 const PORT = process.env.PORT || process.env.API_PORT || 3001;
@@ -23,10 +26,14 @@ app.get("/api/health", (req, res) => {
 
 // Initialize database and start server
 async function start() {
+  console.log("Starting server...");
+  console.log("PORT:", PORT);
+  console.log("NODE_ENV:", process.env.NODE_ENV);
+
   try {
     await initDatabase();
     app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+      console.log(`Server running on port ${PORT}`);
     });
   } catch (error) {
     console.error("Failed to start server:", error);

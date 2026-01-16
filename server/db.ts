@@ -1,13 +1,16 @@
 import { Pool } from "pg";
 import dotenv from "dotenv";
 
-dotenv.config();
+// Only load .env file in development (Render sets env vars directly)
+if (process.env.NODE_ENV !== "production") {
+  dotenv.config();
+}
 
 // Support both DATABASE_URL (for cloud) and individual params (for local)
 const poolConfig = process.env.DATABASE_URL
   ? {
       connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+      ssl: { rejectUnauthorized: false }, // Always use SSL for cloud databases
     }
   : {
       host: process.env.DB_HOST || "localhost",
@@ -17,16 +20,9 @@ const poolConfig = process.env.DATABASE_URL
       password: process.env.DB_PASSWORD || "",
     };
 
-export const pool = new Pool(poolConfig);
+console.log("Connecting to database...", process.env.DATABASE_URL ? "Using DATABASE_URL" : "Using individual params");
 
-// Test connection
-pool.query("SELECT NOW()", (err, res) => {
-  if (err) {
-    console.error("Database connection error:", err.message);
-  } else {
-    console.log("Database connected:", res.rows[0].now);
-  }
-});
+export const pool = new Pool(poolConfig);
 
 // Initialize database schema
 export async function initDatabase() {
