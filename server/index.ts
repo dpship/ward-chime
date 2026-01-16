@@ -18,24 +18,26 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// Initialize database and start server
-async function start() {
-  console.log("Starting server...");
-  console.log("PORT:", PORT);
-  console.log("NODE_ENV:", process.env.NODE_ENV);
-  console.log("DATABASE_URL:", process.env.DATABASE_URL ? "Set (hidden)" : "Not set");
+// Start server
+console.log("Starting server...");
+console.log("PORT:", PORT);
+console.log("NODE_ENV:", process.env.NODE_ENV);
+console.log("DATABASE_URL:", process.env.DATABASE_URL ? "Set (hidden)" : "Not set");
 
-  // Start server first
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+
+  // Initialize database after server is listening (non-blocking)
+  initDatabase().then((success) => {
+    if (success) {
+      console.log("Database ready");
+    } else {
+      console.log("Database initialization failed - will retry on requests");
+    }
   });
+});
 
-  // Then initialize database (non-blocking)
-  try {
-    await initDatabase();
-  } catch (error) {
-    console.error("Database initialization error (will retry on first request):", error);
-  }
-}
-
-start();
+// Handle server errors
+server.on("error", (err) => {
+  console.error("Server error:", err);
+});

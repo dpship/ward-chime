@@ -27,49 +27,57 @@ if (process.env.DATABASE_URL) {
 
 export const pool = new Pool(poolConfig);
 
+// Handle pool errors
+pool.on("error", (err) => {
+  console.error("Unexpected database pool error:", err);
+});
+
 // Initialize database schema
-export async function initDatabase() {
-  const client = await pool.connect();
-
+export async function initDatabase(): Promise<boolean> {
   try {
-    // Test connection first
-    await client.query("SELECT NOW()");
-    console.log("Database connected successfully");
+    const client = await pool.connect();
 
-    // Create bills table
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS bills (
-        id SERIAL PRIMARY KEY,
-        bill_number VARCHAR(50) UNIQUE NOT NULL,
-        patient_name VARCHAR(100) NOT NULL,
-        mobile_number VARCHAR(15) NOT NULL,
-        address TEXT NOT NULL,
-        patient_type VARCHAR(10) NOT NULL,
-        registration_number VARCHAR(50) NOT NULL,
-        total_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    console.log("Bills table ready");
+    try {
+      // Test connection first
+      await client.query("SELECT NOW()");
+      console.log("Database connected successfully");
 
-    // Create procedures table
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS bill_procedures (
-        id SERIAL PRIMARY KEY,
-        bill_id INTEGER REFERENCES bills(id) ON DELETE CASCADE,
-        procedure_name VARCHAR(255) NOT NULL,
-        cost DECIMAL(10, 2) NOT NULL DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    console.log("Bill procedures table ready");
+      // Create bills table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS bills (
+          id SERIAL PRIMARY KEY,
+          bill_number VARCHAR(50) UNIQUE NOT NULL,
+          patient_name VARCHAR(100) NOT NULL,
+          mobile_number VARCHAR(15) NOT NULL,
+          address TEXT NOT NULL,
+          patient_type VARCHAR(10) NOT NULL,
+          registration_number VARCHAR(50) NOT NULL,
+          total_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log("Bills table ready");
 
-    console.log("Database initialization complete");
+      // Create procedures table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS bill_procedures (
+          id SERIAL PRIMARY KEY,
+          bill_id INTEGER REFERENCES bills(id) ON DELETE CASCADE,
+          procedure_name VARCHAR(255) NOT NULL,
+          cost DECIMAL(10, 2) NOT NULL DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log("Bill procedures table ready");
+
+      console.log("Database initialization complete");
+      return true;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error("Error initializing database:", error);
-    throw error;
-  } finally {
-    client.release();
+    return false;
   }
 }
