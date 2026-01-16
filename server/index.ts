@@ -29,15 +29,18 @@ async function start() {
   console.log("Starting server...");
   console.log("PORT:", PORT);
   console.log("NODE_ENV:", process.env.NODE_ENV);
+  console.log("DATABASE_URL:", process.env.DATABASE_URL ? "Set (hidden)" : "Not set");
 
+  // Start server first
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+
+  // Then initialize database (non-blocking)
   try {
     await initDatabase();
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
   } catch (error) {
-    console.error("Failed to start server:", error);
-    process.exit(1);
+    console.error("Database initialization error (will retry on first request):", error);
   }
 }
 
