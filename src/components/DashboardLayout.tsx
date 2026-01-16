@@ -10,9 +10,13 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ title }: DashboardLayoutProps) {
   return (
     <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <DashboardHeader title={title} />
+      <div className="print:hidden">
+        <AppSidebar />
+      </div>
+      <SidebarInset className="print:!ml-0">
+        <div className="print:hidden">
+          <DashboardHeader title={title} />
+        </div>
         <div className="flex flex-1 flex-col">
           <Outlet />
         </div>

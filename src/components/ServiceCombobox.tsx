@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,12 +20,14 @@ import { searchServices, Service } from "@/data/services";
 interface ServiceComboboxProps {
   value: string;
   onSelect: (service: Service | null) => void;
+  onClear?: () => void;
   placeholder?: string;
 }
 
 export function ServiceCombobox({
   value,
   onSelect,
+  onClear,
   placeholder = "Search procedure...",
 }: ServiceComboboxProps) {
   const [open, setOpen] = React.useState(false);
@@ -47,6 +49,25 @@ export function ServiceCombobox({
     setSearchQuery("");
   };
 
+  const handleCustomEntry = () => {
+    if (searchQuery.trim()) {
+      onSelect({
+        id: `custom-${Date.now()}`,
+        name: searchQuery.trim(),
+        cost: 0,
+        department: "Custom",
+      });
+      setOpen(false);
+      setSearchQuery("");
+    }
+  };
+
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelect(null);
+    onClear?.();
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -59,7 +80,15 @@ export function ServiceCombobox({
           <span className={cn("truncate", !value && "text-muted-foreground")}>
             {value || placeholder}
           </span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <div className="flex items-center gap-1 ml-2">
+            {value && (
+              <X
+                className="h-4 w-4 shrink-0 opacity-50 hover:opacity-100"
+                onClick={handleClear}
+              />
+            )}
+            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+          </div>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[400px] p-0" align="start">
@@ -71,9 +100,22 @@ export function ServiceCombobox({
           />
           <CommandList>
             <CommandEmpty>
-              {searchQuery.length < 2
-                ? "Type at least 2 characters to search..."
-                : "No services found."}
+              {searchQuery.length < 2 ? (
+                "Type at least 2 characters to search..."
+              ) : (
+                <div className="py-2 px-2">
+                  <p className="text-sm text-muted-foreground mb-2">No services found.</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2"
+                    onClick={handleCustomEntry}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add "{searchQuery}" as custom procedure
+                  </Button>
+                </div>
+              )}
             </CommandEmpty>
             {results.length > 0 && (
               <CommandGroup heading={`Found ${results.length} services`}>

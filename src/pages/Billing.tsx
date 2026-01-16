@@ -3,16 +3,17 @@ import { BillingForm, BillingFormData } from "@/components/BillingForm";
 import { BillPreview } from "@/components/BillPreview";
 import { PrintTemplate } from "@/components/PrintTemplate";
 import { Button } from "@/components/ui/button";
-import { Printer, FileText } from "lucide-react";
+import { Printer, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { saveBill } from "@/services/api";
 
 export default function Billing() {
   const [formData, setFormData] = useState<BillingFormData>({
     patientName: "",
     mobileNumber: "",
     address: "",
-    ipdNumber: "",
-    opdNumber: "",
+    patientType: "OPD",
+    registrationNumber: "",
     procedures: [{ name: "", cost: 0 }],
   });
 
@@ -21,11 +22,15 @@ export default function Billing() {
     return `RMS-BILL-${timestamp}`;
   });
 
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+
   const handleFormChange = useCallback((data: BillingFormData) => {
     setFormData(data);
+    setIsSaved(false); // Reset saved state when form changes
   }, []);
 
-  const handleGenerateBill = () => {
+  const handleGenerateBill = async () => {
     if (!formData.patientName || !formData.mobileNumber || !formData.address) {
       toast.error("Please fill in all required patient details");
       return;
@@ -36,9 +41,32 @@ export default function Billing() {
       return;
     }
 
-    toast.success("Bill generated successfully!", {
-      description: `Bill Number: ${billNumber}`,
-    });
+    setIsSaving(true);
+    try {
+      const result = await saveBill({
+        billNumber,
+        patientName: formData.patientName,
+        mobileNumber: formData.mobileNumber,
+        address: formData.address,
+        patientType: formData.patientType,
+        registrationNumber: formData.registrationNumber,
+        procedures: formData.procedures,
+      });
+
+      if (result.success) {
+        setIsSaved(true);
+        toast.success("Bill saved successfully!", {
+          description: `Bill Number: ${billNumber}`,
+        });
+      } else {
+        toast.error(result.message || "Failed to save bill");
+      }
+    } catch (error) {
+      console.error("Error saving bill:", error);
+      toast.error("Failed to connect to server. Make sure the backend is running.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handlePrintBill = () => {
@@ -57,7 +85,7 @@ export default function Billing() {
 
   return (
     <>
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-6 print:hidden">
         <div className="mb-6">
           <h2 className="text-2xl font-bold tracking-tight">Patient Billing</h2>
           <p className="text-muted-foreground">
@@ -88,9 +116,14 @@ export default function Billing() {
             onClick={handleGenerateBill}
             size="lg"
             className="gap-2 px-8 transition-smooth hover:scale-105"
+            disabled={isSaving || isSaved}
           >
-            <FileText className="h-5 w-5" />
-            Generate Bill
+            {isSaving ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <FileText className="h-5 w-5" />
+            )}
+            {isSaving ? "Saving..." : isSaved ? "Bill Saved" : "Generate & Save Bill"}
           </Button>
           <Button
             onClick={handlePrintBill}

@@ -51,18 +51,10 @@ export const BillPreview = ({ data, billNumber }: BillPreviewProps) => {
             <span className="text-muted-foreground">Mobile:</span>
             <span className="ml-2 font-medium">{data.mobileNumber || "—"}</span>
           </div>
-          {data.ipdNumber && (
-            <div>
-              <span className="text-muted-foreground">IPD No:</span>
-              <span className="ml-2 font-medium">{data.ipdNumber}</span>
-            </div>
-          )}
-          {data.opdNumber && (
-            <div>
-              <span className="text-muted-foreground">OPD No:</span>
-              <span className="ml-2 font-medium">{data.opdNumber}</span>
-            </div>
-          )}
+          <div>
+            <span className="text-muted-foreground">{data.patientType} No:</span>
+            <span className="ml-2 font-medium font-mono">{data.registrationNumber || "—"}</span>
+          </div>
           <div className="col-span-2">
             <span className="text-muted-foreground">Address:</span>
             <span className="ml-2 font-medium">{data.address || "—"}</span>
