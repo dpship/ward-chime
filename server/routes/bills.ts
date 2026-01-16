@@ -95,6 +95,23 @@ router.get("/", async (req: Request, res: Response) => {
     const offset = (page - 1) * limit;
     const search = req.query.search as string;
 
+    // First check if table exists
+    const tableCheck = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables
+        WHERE table_name = 'bills'
+      )
+    `);
+
+    if (!tableCheck.rows[0].exists) {
+      return res.json({
+        success: true,
+        data: [],
+        pagination: { page, limit, total: 0, totalPages: 0 },
+        message: "Database tables not initialized yet"
+      });
+    }
+
     let query = `
       SELECT id, bill_number, patient_name, mobile_number, patient_type,
              registration_number, total_amount, created_at
@@ -137,7 +154,7 @@ router.get("/", async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch bills",
-      error: error.message,
+      error: error?.message || String(error) || "Unknown error",
     });
   }
 });
