@@ -1,7 +1,7 @@
 import { Pool, PoolConfig } from "pg";
 
 // Log environment for debugging
-console.log("Environment check:");
+console.log("Database module loaded");
 console.log("- NODE_ENV:", process.env.NODE_ENV);
 console.log("- DATABASE_URL set:", !!process.env.DATABASE_URL);
 
@@ -9,13 +9,13 @@ console.log("- DATABASE_URL set:", !!process.env.DATABASE_URL);
 let poolConfig: PoolConfig;
 
 if (process.env.DATABASE_URL) {
-  console.log("Using DATABASE_URL for connection");
+  console.log("Will use DATABASE_URL for connection");
   poolConfig = {
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
   };
 } else {
-  console.log("Using individual params for connection");
+  console.log("Will use individual params for connection");
   poolConfig = {
     host: process.env.DB_HOST || "localhost",
     port: parseInt(process.env.DB_PORT || "5432"),
@@ -25,17 +25,29 @@ if (process.env.DATABASE_URL) {
   };
 }
 
-export const pool = new Pool(poolConfig);
+// Lazy pool initialization
+let _pool: Pool | null = null;
 
-// Handle pool errors
-pool.on("error", (err) => {
-  console.error("Unexpected database pool error:", err);
-});
+export function getPool(): Pool {
+  if (!_pool) {
+    _pool = new Pool(poolConfig);
+    _pool.on("error", (err) => {
+      console.error("Database pool error:", err);
+    });
+  }
+  return _pool;
+}
+
+// For backwards compatibility
+export const pool = {
+  query: (...args: Parameters<Pool["query"]>) => getPool().query(...args),
+  connect: () => getPool().connect(),
+};
 
 // Initialize database schema
 export async function initDatabase(): Promise<boolean> {
   try {
-    const client = await pool.connect();
+    const client = await getPool().connect();
 
     try {
       // Test connection first
