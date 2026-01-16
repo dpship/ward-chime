@@ -1,3 +1,4 @@
+import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -6,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2 } from "lucide-react";
+import { ServiceCombobox } from "@/components/ServiceCombobox";
+import { Service } from "@/data/services";
 
 const billingSchema = z.object({
   patientName: z.string().min(2, "Patient name is required").max(100),
@@ -58,6 +61,13 @@ export const BillingForm = ({ onFormChange }: BillingFormProps) => {
         "procedures",
         procedures.filter((_, i) => i !== index)
       );
+    }
+  };
+
+  const handleServiceSelect = (index: number, service: Service | null) => {
+    if (service) {
+      setValue(`procedures.${index}.name`, service.name);
+      setValue(`procedures.${index}.cost`, service.cost);
     }
   };
 
@@ -153,15 +163,14 @@ export const BillingForm = ({ onFormChange }: BillingFormProps) => {
         </div>
 
         <div className="space-y-3">
-          {procedures.map((_, index) => (
+          {procedures.map((procedure, index) => (
             <div key={index} className="flex gap-3 items-start">
               <div className="flex-1 space-y-2">
-                <Label htmlFor={`procedures.${index}.name`}>Procedure Name *</Label>
-                <Input
-                  id={`procedures.${index}.name`}
-                  {...register(`procedures.${index}.name`)}
-                  placeholder="e.g., Blood Test, X-Ray"
-                  className="transition-smooth"
+                <Label>Procedure / Service *</Label>
+                <ServiceCombobox
+                  value={procedure.name}
+                  onSelect={(service) => handleServiceSelect(index, service)}
+                  placeholder="Search procedure or service..."
                 />
               </div>
 
@@ -194,5 +203,3 @@ export const BillingForm = ({ onFormChange }: BillingFormProps) => {
     </div>
   );
 };
-
-import React from "react";
