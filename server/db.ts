@@ -1,26 +1,29 @@
-import { Pool } from "pg";
-import dotenv from "dotenv";
+import { Pool, PoolConfig } from "pg";
 
-// Only load .env file in development (Render sets env vars directly)
-if (process.env.NODE_ENV !== "production") {
-  dotenv.config();
+// Log environment for debugging
+console.log("Environment check:");
+console.log("- NODE_ENV:", process.env.NODE_ENV);
+console.log("- DATABASE_URL set:", !!process.env.DATABASE_URL);
+
+// Build pool config
+let poolConfig: PoolConfig;
+
+if (process.env.DATABASE_URL) {
+  console.log("Using DATABASE_URL for connection");
+  poolConfig = {
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+  };
+} else {
+  console.log("Using individual params for connection");
+  poolConfig = {
+    host: process.env.DB_HOST || "localhost",
+    port: parseInt(process.env.DB_PORT || "5432"),
+    database: process.env.DB_NAME || "ward_chime",
+    user: process.env.DB_USER || "postgres",
+    password: process.env.DB_PASSWORD || "",
+  };
 }
-
-// Support both DATABASE_URL (for cloud) and individual params (for local)
-const poolConfig = process.env.DATABASE_URL
-  ? {
-      connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false }, // Always use SSL for cloud databases
-    }
-  : {
-      host: process.env.DB_HOST || "localhost",
-      port: parseInt(process.env.DB_PORT || "5432"),
-      database: process.env.DB_NAME || "ward_chime",
-      user: process.env.DB_USER || "postgres",
-      password: process.env.DB_PASSWORD || "",
-    };
-
-console.log("Connecting to database...", process.env.DATABASE_URL ? "Using DATABASE_URL" : "Using individual params");
 
 export const pool = new Pool(poolConfig);
 
